@@ -1,26 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { User, Bell, Link as LinkIcon, X, Clock, LogOut } from "lucide-react";
+import { User, Bell, Link as LinkIcon, X, Clock, LogOut, Menu } from "lucide-react";
 import { getNotifications, markNotificationsRead } from "../api/api";
 
-const Navbar = ({ role }) => {
+const Navbar = ({ role, onMenuClick }) => {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount]     = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  // Fetch notifications on mount and poll every 30s
   const fetchNotifications = async () => {
-  const token = localStorage.getItem("token");
-  if (!token) return; // ← stop here if not logged in
-  try {
-    const data = await getNotifications();
-    setNotifications(data.notifications || []);
-    setUnreadCount(data.unreadCount || 0);
-  } catch (err) {
-    console.error("Failed to fetch notifications:", err);
-  }
-};
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      const data = await getNotifications();
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unreadCount || 0);
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+    }
+  };
 
   useEffect(() => {
     fetchNotifications();
@@ -28,7 +27,6 @@ const Navbar = ({ role }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Open sidebar and mark all as read
   const handleOpenSidebar = async () => {
     setIsSidebarOpen(true);
     if (unreadCount > 0) {
@@ -77,20 +75,37 @@ const Navbar = ({ role }) => {
 
   return (
     <>
-      <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-8 sticky top-0 z-50">
-        {/* LOGO */}
-        <Link to="/dashboard" className="flex items-center gap-2 group">
-          <div className="bg-indigo-600 p-2 rounded-xl rotate-3 group-hover:rotate-0 transition-all shadow-lg shadow-indigo-100">
-            <LinkIcon className="text-white" size={20} />
-          </div>
-          <div className="flex flex-col leading-none">
-            <span className="text-xl font-black tracking-tighter text-slate-900">INTERNAL<span className="text-indigo-600">LINK</span></span>
-            <span className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-400 mt-0.5">Systems Architecture</span>
-          </div>
-        </Link>
+      <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-4 md:px-8 sticky top-0 z-50">
+
+        {/* LEFT: Hamburger (mobile) + Logo */}
+        <div className="flex items-center gap-3">
+          {/* Hamburger — mobile only */}
+          <button
+            onClick={onMenuClick}
+            className="lg:hidden p-2.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+            aria-label="Open menu"
+          >
+            <Menu size={22} />
+          </button>
+
+          {/* LOGO */}
+          <Link to="/dashboard" className="flex items-center gap-2 group">
+            <div className="bg-indigo-600 p-2 rounded-xl rotate-3 group-hover:rotate-0 transition-all shadow-lg shadow-indigo-100">
+              <LinkIcon className="text-white" size={20} />
+            </div>
+            <div className="flex flex-col leading-none">
+              <span className="text-xl font-black tracking-tighter text-slate-900">
+                INTERNAL<span className="text-indigo-600">LINK</span>
+              </span>
+              <span className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-400 mt-0.5 hidden sm:block">
+                Systems Architecture
+              </span>
+            </div>
+          </Link>
+        </div>
 
         {/* RIGHT ACTIONS */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
 
           {/* Bell with unread badge */}
           <button
@@ -106,21 +121,32 @@ const Navbar = ({ role }) => {
           </button>
 
           {/* Profile */}
-          <button onClick={handleProfileClick} className="group p-0.5 rounded-2xl bg-gradient-to-tr from-slate-200 to-slate-50 hover:from-indigo-500 hover:to-purple-500 transition-all shadow-sm">
+          <button
+            onClick={handleProfileClick}
+            className="group p-0.5 rounded-2xl bg-gradient-to-tr from-slate-200 to-slate-50 hover:from-indigo-500 hover:to-purple-500 transition-all shadow-sm"
+          >
             <div className="bg-white rounded-[14px] p-2 text-slate-400 group-hover:text-white group-hover:bg-transparent transition-colors">
               <User size={22} />
             </div>
           </button>
 
-          <div className="h-6 w-[1px] bg-slate-200 mx-2"></div>
+          <div className="hidden md:block h-6 w-[1px] bg-slate-200 mx-1" />
 
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all group border border-transparent hover:border-rose-100"
+            className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all group border border-transparent hover:border-rose-100"
           >
             <LogOut size={18} className="group-hover:-translate-x-1 transition-transform duration-300" />
-            <span className="text-[10px] font-black uppercase tracking-widest hidden lg:block">Sign Out</span>
+            <span className="text-[10px] font-black uppercase tracking-widest hidden lg:block">Log Out</span>
+          </button>
+
+          {/* Logout icon-only on small screens */}
+          <button
+            onClick={handleLogout}
+            className="md:hidden p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+          >
+            <LogOut size={20} />
           </button>
         </div>
       </header>
@@ -145,7 +171,10 @@ const Navbar = ({ role }) => {
                 {notifications.length} total
               </p>
             </div>
-            <button onClick={() => setIsSidebarOpen(false)} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-all">
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-all"
+            >
               <X size={20} />
             </button>
           </div>

@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { getAllTasks, updateTask, deleteTaskApi } from "../api/api";
 
-const API_URL = "http://localhost:4000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 const HRtaskstatus = () => {
   const [tasks, setTasks]             = useState([]);
@@ -16,6 +16,8 @@ const HRtaskstatus = () => {
   const [proofModal, setProofModal]   = useState(null);
   const [downloading, setDownloading] = useState({});
   const navigate = useNavigate();
+
+  const role = localStorage.getItem("usertype");  // "admin" | "hr" | "employee"
 
   const fetchData = async () => {
     try {
@@ -55,42 +57,40 @@ const HRtaskstatus = () => {
     }
   };
 
-  // ── Download via backend proxy — avoids CORS, gets correct file ──────────
   const handleDownloadFile = async (file, index) => {
-  setDownloading(prev => ({ ...prev, [index]: true }));
-  try {
-    const token = localStorage.getItem("token");
-    const response = await fetch(
-      `${API_URL}/tasks/download-proof?filename=${encodeURIComponent(file.url)}&name=${encodeURIComponent(file.name || "proof_file")}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    setDownloading(prev => ({ ...prev, [index]: true }));
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${API_URL}/tasks/download-proof?filename=${encodeURIComponent(file.url)}&name=${encodeURIComponent(file.name || "proof_file")}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    if (!response.ok) {
-      // Try to parse error message from backend
-      try {
-        const err = await response.json();
-        toast.error(err.message || "Download failed");
-      } catch {
-        toast.error("This file cannot be downloaded. Please ask the employee to re-upload it.");
+      if (!response.ok) {
+        try {
+          const err = await response.json();
+          toast.error(err.message || "Download failed");
+        } catch {
+          toast.error("This file cannot be downloaded. Please ask the employee to re-upload it.");
+        }
+        return;
       }
-      return;
-    }
 
-    const blob = await response.blob();
-    const url  = window.URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href     = url;
-    a.download = file.name || "proof_file";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    toast.error("Download failed — " + err.message);
-  } finally {
-    setDownloading(prev => ({ ...prev, [index]: false }));
-  }
-};
+      const blob = await response.blob();
+      const url  = window.URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = file.name || "proof_file";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error("Download failed — " + err.message);
+    } finally {
+      setDownloading(prev => ({ ...prev, [index]: false }));
+    }
+  };
 
   const handleExportPDF = async () => {
     if (filteredTasks.length === 0) return toast.error("No tasks to export");
@@ -212,11 +212,15 @@ const HRtaskstatus = () => {
               className="flex items-center gap-2 px-5 py-4 bg-white border border-slate-200 rounded-2xl font-bold text-sm text-slate-600 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-md transition-all disabled:opacity-50">
               {isExporting ? <><Loader2 size={18} className="animate-spin" /> Exporting...</> : <><Download size={18} /> Export PDF</>}
             </button>
-            <button onClick={() => navigate("/dashboard/assigntask")}
-              className="flex items-center gap-2 px-6 py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm shadow-xl hover:bg-indigo-600 hover:-translate-y-0.5 transition-all duration-300 active:scale-95 group">
-              <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-              Assign Task
-            </button>
+
+            {/* Only HR can assign tasks — hidden for admin */}
+            {role === "hr" && (
+              <button onClick={() => navigate("/dashboard/assigntask")}
+                className="flex items-center gap-2 px-6 py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm shadow-xl hover:bg-indigo-600 hover:-translate-y-0.5 transition-all duration-300 active:scale-95 group">
+                <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+                Assign Task
+              </button>
+            )}
           </div>
         </header>
 

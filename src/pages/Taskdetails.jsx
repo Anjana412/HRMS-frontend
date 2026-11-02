@@ -2,17 +2,19 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, Calendar, User, AlignLeft, 
-  CheckCircle, Upload, Loader2, Paperclip, X
+  CheckCircle, Upload, Loader2, Paperclip, X, Download
 } from "lucide-react";
 import { getTaskById, updateTask } from "../api/api";
+import { toast } from "react-hot-toast";
 import axios from "axios";
 
-const API_URL = "http://localhost:4000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 const Taskdetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [task, setTask]         = useState(null);
+  const [downloading, setDownloading] = useState({});
   const [completing, setCompleting] = useState(false);
   const [uploading, setUploading]   = useState(false);
 
@@ -28,6 +30,31 @@ const Taskdetails = () => {
   useEffect(() => { fetchTask(); }, [id]);
 
   // ── Mark task as completed ──────────────────────────────────────────────
+  const handleDownloadFile = async (file, index) => {
+    setDownloading(prev => ({ ...prev, [index]: true }));
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${API_URL}/tasks/download-proof?filename=${encodeURIComponent(file.url)}&name=${encodeURIComponent(file.name || "proof_file")}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!response.ok) { toast.error("Download failed"); return; }
+      const blob = await response.blob();
+      const url  = window.URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = file.name || "proof_file";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error("Download failed");
+    } finally {
+      setDownloading(prev => ({ ...prev, [index]: false }));
+    }
+  };
+
   const handleComplete = async () => {
     setCompleting(true);
     try {
@@ -172,6 +199,16 @@ const Taskdetails = () => {
                       <p className="text-[10px] text-slate-400">{new Date(file.uploadedAt).toLocaleDateString()}</p>
                     </div>
                   </div>
+                  <button
+                    onClick={() => handleDownloadFile(file, i)}
+                    disabled={downloading[i]}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all disabled:opacity-50 shrink-0"
+                  >
+                    {downloading[i]
+                      ? <><Loader2 size={12} className="animate-spin" /> Wait...</>
+                      : <><Download size={12} /> Download</>
+                    }
+                  </button>
                 </div>
               ))}
             </div>

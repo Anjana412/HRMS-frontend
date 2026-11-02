@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { 
   Users, CheckCircle, Calendar, 
   Search, Filter, ArrowUpRight, ChevronRight,
-  UserPlus, MoreVertical, Download, Clock, Loader2
+  UserPlus, TrendingUp, Download, Clock, Loader2
 } from "lucide-react";
 import { getAllAttendance } from "../api/api";
 import { toast } from "react-hot-toast";
@@ -285,6 +285,22 @@ const Attendance = () => {
                   <span className="text-rose-400">OUT:</span>
                   {rec.checkOut ? new Date(rec.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "---"}
                 </div>
+                {rec.breaks?.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {rec.breaks.map((b, bi) => (
+                      <div key={bi} className="flex items-center gap-1.5">
+                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${b.type === "lunch" ? "bg-amber-50 text-amber-600" : "bg-teal-50 text-teal-600"}`}>
+                          {b.type}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400">
+                          {b.startTime ? new Date(b.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
+                          {b.endTime ? ` → ${new Date(b.endTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : " (active)"}
+                          {b.duration ? ` · ${b.duration}m` : ""}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-[1.5rem] lg:w-auto self-start lg:self-center">
@@ -297,8 +313,11 @@ const Attendance = () => {
                 </span>
               </div>
 
-              <button className="hidden lg:flex p-3 text-slate-300 hover:text-slate-900 transition-colors">
-                <MoreVertical size={20} />
+              <button
+                onClick={() => navigate(`/dashboard/employee-attendance/${rec.employee?._id}`)}
+                className="hidden lg:flex items-center gap-2 px-4 py-2.5 bg-indigo-50 text-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-colors border border-indigo-200"
+              >
+                <TrendingUp size={13} /> View Graph
               </button>
             </div>
           ))

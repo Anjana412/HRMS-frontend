@@ -1,14 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import {
-  Layout,
-  CalendarCheck,
-  ListTodo,
-  CalendarOff,
-  History, // Added for Status
-  FileText,
-  ChevronRight,
-  LogOut
-} from "lucide-react";
+import {Layout,CalendarCheck,ListTodo,CalendarOff,History,FileText,Settings,ChevronRight,LogOut,DollarSign} from "lucide-react";
 
 const Employeesidebar = () => {
   const navigate = useNavigate();
@@ -32,9 +23,9 @@ const Employeesidebar = () => {
       <div className="h-8" />
 
       <nav className="flex flex-col px-4 gap-1.5 flex-1">
-        <Item to="/dashboard" icon={<Layout size={20} />} label="Overview" end />
+        <Item to="/dashboard"              icon={<Layout size={20} />}       label="Overview"      end />
         <Item to="/dashboard/empattendance" icon={<CalendarCheck size={20} />} label="My Attendance" />
-        <Item to="/dashboard/tasks" icon={<ListTodo size={20} />} label="My Tasks" />
+        <Item to="/dashboard/tasks"         icon={<ListTodo size={20} />}      label="My Tasks" />
         
         {/* SECTION DIVIDER */}
         <div className="my-3 relative py-2">
@@ -46,12 +37,21 @@ const Employeesidebar = () => {
           </div>
         </div>
         
-        <Item to="/dashboard/request-leave" icon={<CalendarOff size={20} />} label="Request Leave" />
-        
-        {/* NEW ITEM: Leave Status History */}
-        <Item to="/dashboard/leave-status" icon={<History size={20} />} label="Leave History" />
-        
-        <Item to="/dashboard/documents" icon={<FileText size={20} />} label="My Documents" />
+        <Item to="/dashboard/request-leave" icon={<CalendarOff size={20} />}  label="Request Leave" />
+        <Item to="/dashboard/leave-status"  icon={<History size={20} />}       label="Leave History" />
+        <Item to="/dashboard/mypayslips"    icon={<DollarSign size={20} />}    label="My Payslips" />
+
+        {/* SECTION DIVIDER */}
+        <div className="my-3 relative py-2">
+          <div className="absolute inset-0 flex items-center px-4">
+            <div className="w-full border-t border-slate-800/40"></div>
+          </div>
+          <div className="relative flex justify-center">
+            <span className="bg-slate-950 px-3 text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Account</span>
+          </div>
+        </div>
+
+        <Item to="/dashboard/settings" icon={<Settings size={20} />} label="Settings" />
       </nav>
 
       <div className="p-4 space-y-3 mb-2">
@@ -112,7 +112,7 @@ const Item = ({ to, icon, label, end }) => (
     {({ isActive }) => (
       <>
         {isActive && (
-          <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent pointer-events-none" />
+          <div className="absolute inset-0  from-white/10 to-transparent pointer-events-none" />
         )}
         <span className={`${isActive ? "text-white" : "text-slate-500 group-hover:text-indigo-400"} transition-colors duration-300`}>
           {icon}

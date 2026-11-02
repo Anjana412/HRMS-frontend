@@ -12,6 +12,7 @@ const Viewallattendence = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("all");
+  const [filterDate, setFilterDate] = useState("");
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
@@ -85,7 +86,8 @@ const Viewallattendence = () => {
     const role = log.employee?.usertype || "none";
     const nameMatch = name.toLowerCase().includes(searchTerm.toLowerCase());
     const roleMatch = filterRole === "all" || role === filterRole;
-    return nameMatch && roleMatch;
+    const dateMatch = !filterDate || log.date?.startsWith(filterDate);
+    return nameMatch && roleMatch && dateMatch;
   });
 
   if (loading) return (
@@ -128,13 +130,13 @@ const Viewallattendence = () => {
       </div>
 
       {/* FILTER BAR */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm">
         <div className="relative col-span-2">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input 
             type="text" 
             placeholder="Search personnel by name..." 
-            className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
+            className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -142,15 +144,43 @@ const Viewallattendence = () => {
         <div className="relative">
           <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <select 
-            className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-sm appearance-none focus:ring-2 focus:ring-indigo-500 outline-none"
+            className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-sm text-slate-700 font-medium appearance-none focus:ring-2 focus:ring-indigo-500 outline-none"
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
           >
-            <option value="all">All Roles</option>
-            <option value="hr">HR Only</option>
-            <option value="employee">Employees Only</option>
+            <option value="all"                className="text-slate-700 bg-white">All Roles</option>
+            <option value="manager"            className="text-slate-700 bg-white">Manager</option>
+            <option value="hr"                 className="text-slate-700 bg-white">HR</option>
+            <option value="projectmanager"     className="text-slate-700 bg-white">Project Manager</option>
+            <option value="projectcoordinator" className="text-slate-700 bg-white">Project Coordinator</option>
+            <option value="teamlead"           className="text-slate-700 bg-white">Team Lead</option>
+            <option value="employee"           className="text-slate-700 bg-white">Employee</option>
           </select>
         </div>
+        <div className="relative">
+          <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input
+            type="date"
+            className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-sm text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Result count + clear */}
+      <div className="flex items-center justify-between px-1">
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+          Showing {filteredLogs.length} of {logs.length} records
+        </p>
+        {(searchTerm || filterRole !== "all" || filterDate) && (
+          <button
+            onClick={() => { setSearchTerm(""); setFilterRole("all"); setFilterDate(""); }}
+            className="text-xs font-black text-indigo-500 hover:text-indigo-700 uppercase tracking-widest"
+          >
+            Clear Filters ×
+          </button>
+        )}
       </div>
 
       {/* ATTENDANCE TABLE */}
@@ -170,6 +200,7 @@ const Viewallattendence = () => {
                   <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest">Date</th>
                   <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest">Clock In</th>
                   <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest">Clock Out</th>
+                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest">Breaks</th>
                   <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest">Status</th>
                 </tr>
               </thead>
@@ -202,6 +233,26 @@ const Viewallattendence = () => {
                     </td>
                     <td className="px-8 py-5 text-sm font-bold text-rose-600">
                       {log.checkOut ? new Date(log.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--"}
+                    </td>
+                    <td className="px-8 py-5">
+                      {log.breaks?.length > 0 ? (
+                        <div className="space-y-1">
+                          {log.breaks.map((b, bi) => (
+                            <div key={bi} className="flex items-center gap-1.5">
+                              <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${b.type === "lunch" ? "bg-amber-50 text-amber-600" : "bg-teal-50 text-teal-600"}`}>
+                                {b.type}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-500">
+                                {b.startTime ? new Date(b.startTime).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}) : ""}
+                                {b.endTime ? ` → ${new Date(b.endTime).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}` : " (active)"}
+                                {b.duration ? ` · ${b.duration}m` : ""}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-slate-300 text-xs">—</span>
+                      )}
                     </td>
                     <td className="px-8 py-5">
                       {log.checkOut ? (

@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Usersignup from "./pages/Usersignup";
 import HRdetails from "./pages/HRdetails";
 import AddHR from "./pages/AddHR";
 import { Toaster } from "react-hot-toast";
@@ -13,16 +11,37 @@ import Landingpage from "./pages/Landingpage";
 
 function App() {
   const [token, setToken] = useState(null);
-  const [role, setRole] = useState(null);
-  const [loading, setLoading] = useState(true); // ← wait before rendering routes
+  const [role, setRole]   = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setToken(localStorage.getItem("token"));
-    setRole(localStorage.getItem("usertype"));
-    setLoading(false); // ← done reading localStorage
+    const storedToken = localStorage.getItem("token");
+
+    if (storedToken) {
+      try {
+        // Decode JWT payload and check expiry
+        const payload = JSON.parse(atob(storedToken.split(".")[1]));
+        if (payload.exp * 1000 < Date.now()) {
+          // Token expired — clear everything, show landing page
+          localStorage.clear();
+          setToken(null);
+          setRole(null);
+        } else {
+          // Token valid — proceed to dashboard
+          setToken(storedToken);
+          setRole(localStorage.getItem("usertype"));
+        }
+      } catch {
+        // Corrupt token — clear and show landing page
+        localStorage.clear();
+        setToken(null);
+        setRole(null);
+      }
+    }
+
+    setLoading(false);
   }, []);
 
-  // Don't render routes until we've checked localStorage
   if (loading) return null;
 
   return (
@@ -30,30 +49,26 @@ function App() {
       <Toaster position="top-center" reverseOrder={false} />
       <Routes>
 
-        {/* "/" — logged in → dashboard, not logged in → landing page */}
         <Route
           path="/"
           element={token ? <Navigate to="/dashboard" /> : <Landingpage />}
         />
 
-        {/* Login — logged in → dashboard, not logged in → show login */}
         <Route
           path="/login"
           element={token ? <Navigate to="/dashboard" /> : <Login setToken={setToken} setRole={setRole} />}
         />
 
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/usersignup" element={<Usersignup />} />
-
-        {/* Dashboard — protected */}
+        <Route path="/signup"      element={<Navigate to="/login" replace />} />
+        <Route path="/usersignup"  element={<Navigate to="/login" replace />} />
         <Route
           path="/dashboard/*"
           element={token ? <Dashboard role={role} /> : <Navigate to="/" />}
         />
 
-        <Route path="/hr" element={<HRdetails />} />
-        <Route path="/add-hr" element={<AddHR />} />
-        <Route path="/profile/:id" element={<Viewprofile />} />
+        <Route path="/hr"          element={token ? <HRdetails />  : <Navigate to="/login" />} />
+        <Route path="/add-hr"      element={token ? <AddHR />      : <Navigate to="/login" />} />
+        <Route path="/profile/:id" element={token ? <Viewprofile /> : <Navigate to="/login" />} />
 
         <Route path="*" element={<Navigate to="/" />} />
 
